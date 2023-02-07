@@ -9,7 +9,7 @@ import requests
 import africastalking
 
 #initiating the airtime api
-username = "sandbox"   #YOUR_USERNAME_GOES_HERE"
+username = "Praise Godwins"   #YOUR_USERNAME_GOES_HERE"
 api_key = "0400606da5dc0bb3c11596d85d645b5f419c2e845b766750b22d8b8f0d6a5a34"  #YOUR_APIKEY_GOES_HERE
 
 africastalking.initialize(username, api_key)
