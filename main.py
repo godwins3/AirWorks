@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException, status, File, UploadFile, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
-import pandas as pd
 from pymongo import MongoClient
 from typing import List,Optional
 from pydantic import BaseModel
