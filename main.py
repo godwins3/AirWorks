@@ -42,7 +42,7 @@ async def read_root():
 
 
 @app.get("/ussd/")
-async def ussd_callback(ussd: ussd, request: Request, api_key: str = Header(None)):
+def ussd_callback(ussd: ussd, request: Request, api_key: str = Header(None)):
     global response
     session_id = request.values.get("sessionId", None)
     service_code = request.values.get("serviceCode", None)
