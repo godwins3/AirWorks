@@ -44,13 +44,13 @@ async def read_root():
 @app.get("/ussd/")
 async def ussd_callback(ussd: ussd, request: Request, api_key: str = Header(None)):
     global response
-    session_id = ussd.session_id
-    service_code = ussd.service_code
-    phone_number = ussd.phone_number
+    session_id = request.values.get("sessionId", None)
+    service_code = request.values.get("serviceCode", None)
+    phone_number = request.values.get("phoneNumber", None)
+    text = request.values.get("text", "default")
     amount = ussd.amount
-    text = ussd.text
     currency_code = "KES"
-
+    
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
