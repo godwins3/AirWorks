@@ -104,7 +104,7 @@ def ussd_callback(ussd: ussd, request: Request, api_key: str = Header(None)):
 
     return response
 
-@app.post("/ussd/")
+@app.post("/ussd/post/")
 async def ussd_callback(ussd: ussd, request: Request, api_key: str = Header(None)):
     global response
     session_id = ussd.session_id

@@ -62,3 +62,4 @@ jobs:
           app-name: 'airworkske'
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E38A9048152940D19898771C6EA79B12 }}
+
