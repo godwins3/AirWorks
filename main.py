@@ -41,7 +41,7 @@ async def read_root():
 text = 0
 
 @app.get("/ussd/")
-def ussd_callback(ussd: ussdResponse, request: Request, api_key: api_key):
+def ussd_callback(ussd: ussdResponse, request: Request):
 
     if text == '':
         response  = "CON Send instructions \n"
@@ -66,13 +66,14 @@ def ussd_callback(ussd: ussdResponse, request: Request, api_key: api_key):
     return response
 
 @app.post("/ussd/post/")
-async def ussd_callback(ussd: ussdRequest, request: Request, api_key: str = Header(None)):
-    global response
-    session_id = ussd.session_id
-    service_code = ussd.service_code
-    phone_number = ussd.phone_number
-    amount = ussd.amount
-    text = ussd.text
+async def ussd_callback(ussd: ussdRequest, request: Request ):
+    response = ussdResponse(
+        session_id = ussd.session_id,
+        service_code = ussd.service_code,
+        phone_number = ussd.phone_number,
+        amount = ussd.amount,
+        text = ussd.text
+    )
 
     headers = {
         "Accept": "application/json",
