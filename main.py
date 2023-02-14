@@ -2,10 +2,10 @@ from fastapi import FastAPI, HTTPException, status, File, UploadFile, Header, Re
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 from typing import List,Optional
-from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
 from datetime import date, datetime
 from cachetools import Cache
+from models import*
 import uvicorn
 import requests
 import africastalking
@@ -33,18 +33,6 @@ app = FastAPI()
 
 response = ""
 
-class ussdRequest(BaseModel):
-    session_id: int
-    service_code: int
-    phone_number: int
-    text: str
-    amount: int
-
-class ussdResponse(BaseModel):
-    session_id: int
-    service_code: int
-    phone_number: int
-
 
 @app.get("/")
 async def read_root():
@@ -53,7 +41,7 @@ async def read_root():
 text = 0
 
 @app.get("/ussd/")
-def ussd_callback(ussd: ussd, request: Request, api_key: str = Header(None)):
+def ussd_callback(ussd: ussdResponse, request: Request, api_key: api_key):
 
     if text == '':
         response  = "CON Send instructions \n"
@@ -78,7 +66,7 @@ def ussd_callback(ussd: ussd, request: Request, api_key: str = Header(None)):
     return response
 
 @app.post("/ussd/post/")
-async def ussd_callback(ussd: ussd, request: Request, api_key: str = Header(None)):
+async def ussd_callback(ussd: ussdRequest, request: Request, api_key: str = Header(None)):
     global response
     session_id = ussd.session_id
     service_code = ussd.service_code
