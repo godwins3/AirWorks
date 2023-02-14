@@ -4,6 +4,8 @@ from pymongo import MongoClient
 from typing import List,Optional
 from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
+from datetime import date, datetime
+from cachetools import Cache
 import uvicorn
 import requests
 import africastalking
@@ -19,43 +21,39 @@ phone_number = "YOUR_PHONE_NUMBER_GOES_HERE"
 amount = 300
 currency_code = "KES"
 
+# maxsize is the size of data the Cache can hold
+cache_data = Cache(maxsize=50000)
+
 
 # Connect to the MongoDB database
-client = MongoClient('mongodb://localhost:27017')
+client = MongoClient('mongodb+srv://code_god:rootadmin@aoristai.1ofe1s4.mongodb.net/test')
 db = client['airworks']
 
 app = FastAPI()
 
 response = ""
 
-class ussd(BaseModel):
+class ussdRequest(BaseModel):
     session_id: int
     service_code: int
     phone_number: int
     text: str
     amount: int
 
+class ussdResponse(BaseModel):
+    session_id: int
+    service_code: int
+    phone_number: int
+
+
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
     
-
+text = 0
 
 @app.get("/ussd/")
 def ussd_callback(ussd: ussd, request: Request, api_key: str = Header(None)):
-    global response
-    session_id = request.values.get("sessionId", None)
-    service_code = request.values.get("serviceCode", None)
-    phone_number = request.values.get("phoneNumber", None)
-    text = request.values.get("text", "default")
-    amount = ussd.amount
-    currency_code = "KES"
-    
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "apiKey": api_key
-    }
 
     if text == '':
         response  = "CON Send instructions \n"
@@ -72,36 +70,11 @@ def ussd_callback(ussd: ussd, request: Request, api_key: str = Header(None)):
     elif text == '1*1':
         response = "CON enter phone number \n"
         phone_number += ""
-        try:
-            response = airtime.send(phone_number=phone_number, amount=amount, currency_code=currency_code)
-            print(response)
-        except Exception as e:
-            print(f"Encountered an error while sending airtime. More error details below\n {e}")
-
+        
     else:
         response = "CON service not available"
 
-    data = {
-        "username": "MyAppUserName",
-        "productName": "myProductName",
-        "recipients": [{
-            "phoneNumber": phone_number,
-            "currencyCode": "KES",
-            "amount": amount,
-            "metadata": {
-                "foo": "bar",
-                "key": "value"
-            },
-            "reason": "paymentsReason"
-        }]
-    }
-
-    response = requests.post(
-        "https://payments.sandbox.africastalking.com/mobile/b2c/request",
-        headers=headers,
-        json=data
-    )
-
+    
     return response
 
 @app.post("/ussd/post/")
