@@ -26,135 +26,207 @@ cache_data = Cache(maxsize=50000)
 
 
 # Connect to the MongoDB database
-client = MongoClient('mongodb+srv://code_god:rootadmin@aoristai.1ofe1s4.mongodb.net/test')
-db = client['airworks']
+#client = MongoClient('mongodb+srv://code_god:rootadmin@aoristai.1ofe1s4.mongodb.net/test')
+#db = client['airworks']
 
 app = FastAPI()
 
 response = ""
 
-
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
-    
-text = 0
 
-@app.get("/ussd/")
-def ussd_callback(ussd: ussdResponse, request: Request):
+@app.post("/ussd")
+async def handle_ussd(ussdRequest: UssdRequest):
+    response = UssdResponse(
+        sessionID=ussdRequest.sessionID,
+        userID=ussdRequest.userID,
+        msisdn=ussdRequest.msisdn,
+    )
 
-    if text == '':
-        response  = "CON Send instructions \n"
-        response += "1. Buy airtime \n"
-        response += "2. Buy sms \n"
-        response += "3. Buy data \n"
-        response += "4. BUy minutes"
+    if ussdRequest.newSession:
+        response.message = (
+            "Select an option"
+            + "\n1. Buy Airtime"
+            + "\n2. Buy SMS"
+            + "\n3. Buy Data"
+            + "\n4. Buy Minutes"
+        )
 
-    elif text == '1':
-        response = "CON send instructions \n"
-        response += "1. Enter phone number"
-        
+        response.continueSession = True
 
-    elif text == '1*1':
-        response = "CON enter phone number \n"
-        phone_number += ""
-        
+        # Keep track of the USSD state of the user and their session
+
+        current_state = UssdState(
+            sessionID=ussdRequest.sessionID,
+            msisdn=ussdRequest.msisdn,
+            userData=ussdRequest.userData,
+            network=ussdRequest.network,
+            message=response.message,
+            level=1,
+            part=1,
+            newSession=True,
+        )
+
+        user_response_tracker = cache_data.get(hash(ussdRequest.sessionID), [])
+
+        user_response_tracker.append(current_state)
+
+        cache_data[hash(ussdRequest.sessionID)] = user_response_tracker
     else:
-        response = "CON service not available"
+        last_response = cache_data.get(hash(ussdRequest.sessionID), [])[-1]
 
-    
+        if last_response.level == 1:
+            user_data = ussdRequest.userData
+
+            if user_data == "1":
+                response.message = (
+                    "Enter Phone Number"
+                )
+                response.continueSession = True
+
+                # Keep track of the USSD state of the user and their session
+
+                current_state = UssdState(
+                    sessionID=ussdRequest.sessionID,
+                    msisdn=ussdRequest.msisdn,
+                    userData=ussdRequest.userData,
+                    network=ussdRequest.network,
+                    message=response.message,
+                    level=2,
+                    part=1,
+                    newSession=ussdRequest.newSession,
+                )
+
+                user_response_tracker = cache_data.get(hash(ussdRequest.sessionID), [])
+
+                user_response_tracker.append(current_state)
+
+                cache_data[hash(ussdRequest.sessionID)] = user_response_tracker
+            elif (
+                user_data == ussd.phone_number
+                or user_data == "3"
+                or user_data == "4"
+                or user_data == "5"
+            ):
+                response.message = "Thank you for voting!"
+                response.continueSession = False
+            else:
+                response.message = "Bad choice!"
+                response.continueSession = False
+        elif last_response.level == 2:
+            possible_choices = ["1", "2", "3", "4"]
+
+            if last_response.part == 1 and ussdRequest.userData == "#":
+                response.message = (
+                    "For SMS which of the features do you like best?"
+                    + "\n3. Bulk SMS"
+                    + "\n\n*. Go Back"
+                    + "\n#. Next Page"
+                )
+                response.continueSession = True
+
+                current_state = UssdState(
+                    sessionID= ussdRequest.sessionID,
+                    msisdn=ussdRequest.msisdn,
+                    userData=ussdRequest.userData,
+                    network=ussdRequest.network,
+                    message=response.message,
+                    level=2,
+                    part=2,
+                    newSession=ussdRequest.newSession,
+                )
+
+                user_response_tracker = cache_data.get(hash(ussdRequest.sessionID), [])
+
+                user_response_tracker.append(current_state)
+
+                cache_data[hash(ussdRequest.sessionID)] = user_response_tracker
+            elif last_response.part == 2 and ussdRequest.userData == "#":
+                response.message = (
+                    "For SMS which of the features do you like best?"
+                    + "\n4. SMS To Contacts"
+                    + "\n\n*. Go Back"
+                )
+                response.continueSession = True
+
+                current_state = UssdState(
+                    sessionID=ussdRequest.sessionID,
+                    msisdn=ussdRequest.msisdn,
+                    userData=ussdRequest.userData,
+                    network=ussdRequest.network,
+                    message=response.message,
+                    level=2,
+                    part=3,
+                    newSession=ussdRequest.newSession,
+                )
+
+                user_response_tracker = cache_data.get(hash(ussdRequest.sessionID), [])
+
+                user_response_tracker.append(current_state)
+
+                cache_data[hash(ussdRequest.sessionID)] = user_response_tracker
+            elif last_response.part == 3 and ussdRequest.userData == "*":
+                response.message = (
+                    "For SMS which of the features do you like best?"
+                    + "\n3. Bulk SMS"
+                    + "\n\n*. Go Back"
+                    + "\n#. Next Page"
+                )
+                response.continueSession = True
+
+                current_state = UssdState(
+                    sessionID=ussdRequest.sessionID,
+                    msisdn=ussdRequest.msisdn,
+                    userData=ussdRequest.userData,
+                    network=ussdRequest.network,
+                    message=response.message,
+                    level=2,
+                    part=2,
+                    newSession=ussdRequest.newSession,
+                )
+
+                user_response_tracker = cache_data.get(hash(ussdRequest.sessionID), [])
+
+                user_response_tracker.append(current_state)
+
+                cache_data[hash(ussdRequest.sessionID)] = user_response_tracker
+            elif last_response.part == 2 and ussdRequest.userData == "*":
+                response.message = (
+                    "For SMS which of the features do you like best?"
+                    + "\n1. From File"
+                    + "\n2. Quick SMS"
+                    + "\n\n #. Next Page"
+                )
+                response.continueSession = True
+
+                # Keep track of the USSD state of the user and their session
+
+                current_state = ussdState(
+                    sessionID=ussdRequest.sessionID,
+                    msisdn=ussdRequest.msisdn,
+                    userData=ussdRequest.userData,
+                    network=ussdRequest.network,
+                    message=response.message,
+                    level=2,
+                    part=1,
+                    newSession=ussdRequest.newSession,
+                )
+
+                user_response_tracker = cache_data.get(hash(ussdRequest.sessionID), [])
+
+                user_response_tracker.append(current_state)
+
+                cache_data[hash(ussdRequest.sessionID)] = user_response_tracker
+            elif ussdRequest.userData in possible_choices:
+                response.message = "Thank you for voting!"
+                response.continueSession = False
+            else:
+                response.message = "Bad choice!"
+                response.continueSession = False
+
     return response
-
-@app.post("/ussd/post/")
-async def ussd_callback(ussd: ussdRequest, request: Request ):
-    response = ussdResponse(
-        session_id = ussd.session_id,
-        service_code = ussd.service_code,
-        phone_number = ussd.phone_number,
-        amount = ussd.amount,
-        text = ussd.text
-    )
-
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "apiKey": api_key
-    }
-
-    if text == '':
-        response  = "CON Send instructions \n"
-        response += "1. Buy airtime \n"
-        response += "2. Buy sms \n"
-        response += "3. Buy data \n"
-        response += "4. BUy minutes"
-
-    elif text == '1':
-        response = "CON send instructions \n"
-        response += "1. Enter phone number"
-        
-
-    elif text == '1*1':
-        response = "CON enter phone number \n"
-        phone_number += ""
-        try:
-            response = airtime.send(phone_number=phone_number, amount=amount, currency_code=currency_code)
-            print(response)
-        except Exception as e:
-            print(f"Encountered an error while sending airtime. More error details below\n {e}")
-
-    else:
-        response = "CON service not available"
-
-    data = {
-        "username": "MyAppUserName",
-        "productName": "myProductName",
-        "recipients": [{
-            "phoneNumber": phone_number,
-            "currencyCode": "KES",
-            "amount": amount,
-            "metadata": {
-                "foo": "bar",
-                "key": "value"
-            },
-            "reason": "paymentsReason"
-        }]
-    }
-
-    response = requests.post(
-        "https://payments.sandbox.africastalking.com/mobile/b2c/request",
-        headers=headers,
-        json=data
-    )
-
-    return response
-
-@app.post("/mobile/b2c/request")
-async def send_mobile_b2c_payment_request(request: Request, api_key: str = Header(None)):
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "apiKey": api_key
-    }
-    data = {
-        "username": "MyAppUserName",
-        "productName": "myProductName",
-        "recipients": [{
-            "phoneNumber": phone_number,
-            "currencyCode": "KES",
-            "amount": amount,
-            "metadata": {
-                "foo": "bar",
-                "key": "value"
-            },
-            "reason": "paymentsReason"
-        }]
-    }
-    response = requests.post(
-        "https://payments.sandbox.africastalking.com/mobile/b2c/request",
-        headers=headers,
-        json=data
-    )
-    return response.json()
 
 
 if __name__ == "__main__":
