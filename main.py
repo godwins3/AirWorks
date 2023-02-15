@@ -106,9 +106,6 @@ async def handle_ussd(ussdRequest: UssdRequest):
                 cache_data[hash(ussdRequest.sessionID)] = user_response_tracker
             elif (
                 user_data == ussd.phone_number
-                or user_data == "3"
-                or user_data == "4"
-                or user_data == "5"
             ):
                 response.message = "Thank you for voting!"
                 response.continueSession = False
